@@ -1,5 +1,4 @@
 node_modules
-dist
 docs
 src/test/quicktest.ts
 .zed
