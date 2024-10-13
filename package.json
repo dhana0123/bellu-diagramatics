@@ -1,5 +1,5 @@
 {
-  "name": "diagramatics",
+  "name": "bellu-diagramatics",
   "version": "1.6.3",
   "type": "module",
   "description": "Interactive Diagram Maker",
@@ -15,8 +15,6 @@
     "diagram",
     "chart"
   ],
-  "author": "Rayhan Alghiffari Azizi",
-  "license": "MIT",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^26.0.1",
     "@rollup/plugin-node-resolve": "^15.2.3",

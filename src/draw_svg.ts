@@ -1,4 +1,4 @@
-import { Diagram, DiagramType, DiagramStyle, TextData, DEFAULT_FONTSIZE } from "./diagram.js";
+import { Diagram, DiagramType, DiagramStyle, TextData, DEFAULT_FONTSIZE, LinearGradient } from "./diagram.js";
 import { tab_color, get_color } from "./color_palette.js";
 import { to_degree, expand_directional_value } from "./utils.js";
 import { str_to_mathematical_italic, str_to_normal_from_mathematical_italic } from './unicode_utils.js'
@@ -56,6 +56,10 @@ export function reset_default_styles() : void {
         (default_textdata as any)[s] = (_init_default_textdata as any)[s];
 }
 
+function isLinearGradient(fill: string | LinearGradient): fill is LinearGradient {
+    return typeof fill === "object" && (fill as LinearGradient).type === "linearGradient";
+}
+
 function draw_polygon(
     svgelement : SVGSVGElement, target_element : SVGSVGElement|SVGGElement,
     diagram : Diagram, svgtag? : string
@@ -64,6 +68,41 @@ function draw_polygon(
     let style = {...default_diagram_style, ...diagram.style}; // use default if not defined
     style.fill = get_color(style.fill as string, tab_color);
     style.stroke = get_color(style.stroke as string, tab_color);
+
+    // add def
+    let defs = svgelement.querySelector('defs');
+    if(!defs) {
+        defs = document.createElementNS("http://www.w3.org/2000/svg" ,'defs')
+        svgelement.appendChild(defs)
+    }
+
+    if(isLinearGradient(style.fill)) {
+        // create gradient
+        const gradientId = `gradient-${Math.random().toString(36).substr(2, 9)}`;
+        const gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
+        let {x1, x2, y1, y2} = style.fill;
+        gradient.setAttribute("id", gradientId);
+        gradient.setAttribute("x1", x1|| "0%")
+        gradient.setAttribute("y1", y1 || "0%");
+        gradient.setAttribute("x2", x2 || "100%");
+        gradient.setAttribute("y2", y2 || "0%")
+
+        style.fill.stops.forEach(stop => {
+            const stopElement = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+            stopElement.setAttribute("offset", stop.offset)
+            stopElement.setAttribute("stop-color", get_color(stop.color, tab_color));
+            if (stop.opacity !== undefined) {
+                stopElement.setAttribute("stop-opacity", stop.opacity.toString());
+            }
+            gradient.appendChild(stopElement)
+        })
+
+        defs.appendChild(gradient);
+        style.fill = `url(#${gradientId})`
+
+    } else {
+        style.fill = get_color(style.fill, tab_color)
+    }
 
     // draw svg
     let polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");

@@ -31,7 +31,7 @@ export type Anchor =
 
 export type DiagramStyle = {
     "stroke"           : string,
-    "fill"             : string,
+    "fill"             : string | LinearGradient,
     "opacity"          : string,
     "stroke-width"     : string, // number
     "stroke-linecap"   : string,
@@ -40,6 +40,15 @@ export type DiagramStyle = {
     "vector-effect"    : string,
     "filter"?          : string
     // TODO : add more style
+}
+
+export type LinearGradient = {
+    type: 'linearGradient',
+    x1?: string,
+    y1?: string,
+    x2?: string,
+    y2?: string,
+    stops: Array<{offset: string, color: string, opacity?: number }>
 }
 
 export type TextData = {
@@ -109,16 +118,16 @@ function anchor_to_textdata(anchor : Anchor) : Partial<TextData> {
 * Diagram is a tree of Diagrams
 */
 export class Diagram {
-    type : DiagramType;
-    children : Diagram[] = [];
-    path : Path | undefined = undefined; // Polygon and Curve have a path
-    origin : Vector2 = new Vector2(0, 0); // position of the origin of the diagram
+    type          : DiagramType;
+    children      : Diagram[] = [];
+    path          : Path | undefined = undefined; // Polygon and Curve have a path
+    origin        : Vector2 = new Vector2(0, 0); // position of the origin of the diagram
     style         : Partial<DiagramStyle>      = {};
     textdata      : Partial<TextData>          = {};
     multilinedata : Partial<MultilineTextData> = {};
     imgdata       : Partial<ImageData>         = {};
     mutable       : boolean   = false;
-    tags : string[] = [];
+    tags          : string[] = [];
     
     private _bbox_cache : [Vector2, Vector2] | undefined = undefined;
 
@@ -400,7 +409,7 @@ export class Diagram {
         return newd;
     }
 
-    private update_style(stylename : keyof Diagram['style'], stylevalue : string, excludedType? : DiagramType[]) : Diagram {
+    private update_style(stylename : keyof Diagram['style'], stylevalue : string | LinearGradient, excludedType? : DiagramType[]) : Diagram {
         let newd : Diagram = this.copy_if_not_mutable();
         if (excludedType?.includes(newd.type)) { 
             return newd; 
@@ -408,7 +417,11 @@ export class Diagram {
             || newd.type == DiagramType.Text || newd.type == DiagramType.Image 
             || newd.type == DiagramType.MultilineText
         ) {
+           if(stylename === "fill") {
             newd.style[stylename] = stylevalue;
+           } else { 
+            newd.style[stylename] = stylevalue as string;
+           }
         } else if (newd.type == DiagramType.Diagram) {
             // newd.children = newd.children.map(c => c.update_style(stylename, stylevalue, excludedType));
             for (let i = 0; i < newd.children.length; i++)
@@ -427,7 +440,7 @@ export class Diagram {
         });
     }
 
-    public fill(color : string) : Diagram { 
+    public fill(color : string | LinearGradient) : Diagram { 
         return this.update_style('fill', color, [DiagramType.Text]);
     }
     public stroke(color : string) : Diagram { 
